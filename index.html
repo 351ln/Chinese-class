@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>發明家排序挑戰</title>
+
 <style>
 body { font-family: sans-serif; text-align: center; background:#f5f5f5; }
 .container { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
@@ -11,12 +12,13 @@ body { font-family: sans-serif; text-align: center; background:#f5f5f5; }
 .card { border:2px dashed #aaa; cursor:grab; }
 .slot { border:2px solid #333; }
 .card img, .slot img { width:100%; height:100%; object-fit:cover; }
-button { margin-top:20px; padding:10px 20px; }
+button { margin:10px; padding:10px 20px; }
 </style>
+
 </head>
 <body>
 
-<h1 id="title">關卡一：愛迪生</h1>
+<h1 id="title"></h1>
 <p>👉 排序後，請用「先、再、最後」說一次故事</p>
 
 <div class="container" id="cards"></div>
@@ -25,48 +27,56 @@ button { margin-top:20px; padding:10px 20px; }
 <button onclick="checkAnswer()">確認答案</button>
 <p id="result"></p>
 
+<div>
+  <button onclick="prevLevel()" id="prevBtn">上一關</button>
+  <button onclick="nextLevel()" id="nextBtn">下一關</button>
+  <button onclick="resetLevel()" id="resetBtn">重設</button>
+</div>
+
 <script>
 
-// ⚠️ 這裡放你的圖片（用本地路徑或網址）
+// ===== 關卡資料 =====
 const levels = [
 {
  name:"愛迪生",
-    images: [
-      "./images/e1.png",
-      "./images/e2.png",
-      "./images/e3.png",
-      "./images/e4.png",
-      "./images/e5.png",
-      "./images/e6.png"
- ]
+ images:[
+  "./images/e1.png","./images/e2.png","./images/e3.png",
+  "./images/e4.png","./images/e5.png","./images/e6.png"
+ ],
+ mode:"partial" // 6選3
 },
 {
  name:"牛頓",
  images:[
   "./images/e7.png","./images/e8.png","./images/e9.png"
- ]
+ ],
+ mode:"full"
 },
 {
  name:"萊特兄弟",
  images:[
   "./images/w1.png","./images/w2.png","./images/w3.png","./images/w4.png"
- ]
+ ],
+ mode:"full"
 }
 ];
 
 let currentLevel = 0;
 
+// ===== 載入關卡 =====
 function loadLevel(){
  const level = levels[currentLevel];
- document.getElementById("title").innerText = `關卡${currentLevel+1}：${level.name}`;
- 
+ document.getElementById("title").innerText = 關卡${currentLevel+1}：${level.name};
+
  const cardsDiv = document.getElementById("cards");
  const slotsDiv = document.getElementById("slots");
  cardsDiv.innerHTML = "";
  slotsDiv.innerHTML = "";
- 
+
+ // 洗牌
  let shuffled = [...level.images].sort(()=>Math.random()-0.5);
- 
+
+ // 卡片
  shuffled.forEach(src=>{
   let card = document.createElement("div");
   card.className="card";
@@ -79,45 +89,111 @@ function loadLevel(){
   card.ondragstart = e=> e.dataTransfer.setData("text",src);
   cardsDiv.appendChild(card);
  });
- 
- level.images.forEach(()=>{
+
+ // slot 數量
+ let slotCount = level.mode === "partial" ? 3 : level.images.length;
+
+ for(let i=0;i<slotCount;i++){
   let slot = document.createElement("div");
   slot.className="slot";
 
   slot.ondragover = e=> e.preventDefault();
   slot.ondrop = e=>{
     let data = e.dataTransfer.getData("text");
-    slot.innerHTML = `<img src="${data}">`;
+    slot.innerHTML = <img src="${data}">;
     slot.setAttribute("data-src", data);
   }
 
   slotsDiv.appendChild(slot);
- });
+ }
+
+ updateButtons();
+ document.getElementById("result").innerText="";
 }
 
+// ===== 檢查答案 =====
 function checkAnswer(){
  const level = levels[currentLevel];
  const slots = document.querySelectorAll(".slot");
+
+ let userOrder = [];
+ slots.forEach(slot=>{
+   const src = slot.getAttribute("data-src");
+   if(src) userOrder.push(src);
+ });
+
+ // 愛迪生：6選3
+ if(level.mode === "partial"){
+   if(userOrder.length < 3){
+     document.getElementById("result").innerText="請放滿3張！";
+     return;
+   }
+
+   let isValid = true;
+   let lastIndex = -1;
+
+   userOrder.forEach(src=>{
+     const index = level.images.indexOf(src);
+     if(index <= lastIndex){
+       isValid = false;
+     }
+     lastIndex = index;
+   });
+
+   document.getElementById("result").innerText = isValid ? "答對了！" : "順序錯了！";
+   return;
+ }
+
+ // 一般關卡（全部排序）
  let correct = true;
- 
  slots.forEach((slot,i)=>{
   if(slot.getAttribute("data-src") !== level.images[i]) correct=false;
  });
- 
- if(correct){
-  document.getElementById("result").innerText="答對了！";
+
+ document.getElementById("result").innerText = correct ? "答對了！" : "再試一次！";
+}
+
+// ===== 關卡控制 =====
+function nextLevel(){
+ if(currentLevel < levels.length - 1){
   currentLevel++;
-  if(currentLevel < levels.length){
-    setTimeout(loadLevel,1000);
-  } else {
-    document.getElementById("result").innerText="全部完成！";
-  }
- } else {
-  document.getElementById("result").innerText="再試一次！";
+  loadLevel();
  }
 }
 
+function prevLevel(){
+ if(currentLevel > 0){
+  currentLevel--;
+  loadLevel();
+ }
+}
+
+function resetLevel(){
+ loadLevel();
+}
+
+// ===== 控制按鈕顯示 =====
+function updateButtons(){
+ document.getElementById("prevBtn").style.display = "none";
+ document.getElementById("nextBtn").style.display = "none";
+ document.getElementById("resetBtn").style.display = "none";
+
+ if(currentLevel === 0){
+  document.getElementById("nextBtn").style.display = "inline-block";
+ }
+ else if(currentLevel === 1){
+  document.getElementById("prevBtn").style.display = "inline-block";
+  document.getElementById("nextBtn").style.display = "inline-block";
+ }
+ else{
+  document.getElementById("prevBtn").style.display = "inline-block";
+  document.getElementById("resetBtn").style.display = "inline-block";
+ }
+}
+
+// ===== 初始化 =====
 loadLevel();
+
 </script>
 
 </body>
