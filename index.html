@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>發明家排序挑戰</title>
+<style>
+body { font-family: sans-serif; text-align: center; background:#f5f5f5; }
+.container { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.card, .slot { width:120px; height:120px; border-radius:50%; overflow:hidden; }
+.card { border:2px dashed #aaa; cursor:grab; }
+.slot { border:2px solid #333; }
+.card img, .slot img { width:100%; height:100%; object-fit:cover; }
+button { margin-top:20px; padding:10px 20px; }
+</style>
+</head>
+<body>
+
+<h1 id="title">關卡一：愛迪生</h1>
+<p>👉 排序後，請用「先、再、最後」說一次故事</p>
+
+<div class="container" id="cards"></div>
+<div class="container" id="slots"></div>
+
+<button onclick="checkAnswer()">確認答案</button>
+<p id="result"></p>
+
+<script>
+
+// ⚠️ 這裡放你的圖片（用本地路徑或網址）
+const levels = [
+{
+ name:"愛迪生",
+ images:[
+  "./images/e1.png","./images/e2.png","./images/e3.png",
+  "./images/e4.png","./images/e5.png","./images/e6.png"
+ ]
+},
+{
+ name:"牛頓",
+ images:[
+  "./images/n1.png","./images/n2.png","./images/n3.png",
+  "./images/n4.png","./images/n5.png","./images/n6.png"
+ ]
+},
+{
+ name:"萊特兄弟",
+ images:[
+  "./images/w1.png","./images/w2.png","./images/w3.png","./images/w4.png"
+ ]
+}
+];
+
+let currentLevel = 0;
+
+function loadLevel(){
+ const level = levels[currentLevel];
+ document.getElementById("title").innerText = `關卡${currentLevel+1}：${level.name}`;
+ 
+ const cardsDiv = document.getElementById("cards");
+ const slotsDiv = document.getElementById("slots");
+ cardsDiv.innerHTML = "";
+ slotsDiv.innerHTML = "";
+ 
+ let shuffled = [...level.images].sort(()=>Math.random()-0.5);
+ 
+ shuffled.forEach(src=>{
+  let card = document.createElement("div");
+  card.className="card";
+  card.draggable=true;
+
+  let img = document.createElement("img");
+  img.src = src;
+  card.appendChild(img);
+
+  card.ondragstart = e=> e.dataTransfer.setData("text",src);
+  cardsDiv.appendChild(card);
+ });
+ 
+ level.images.forEach(()=>{
+  let slot = document.createElement("div");
+  slot.className="slot";
+
+  slot.ondragover = e=> e.preventDefault();
+  slot.ondrop = e=>{
+    let data = e.dataTransfer.getData("text");
+    slot.innerHTML = `<img src="${data}">`;
+    slot.setAttribute("data-src", data);
+  }
+
+  slotsDiv.appendChild(slot);
+ });
+}
+
+function checkAnswer(){
+ const level = levels[currentLevel];
+ const slots = document.querySelectorAll(".slot");
+ let correct = true;
+ 
+ slots.forEach((slot,i)=>{
+  if(slot.getAttribute("data-src") !== level.images[i]) correct=false;
+ });
+ 
+ if(correct){
+  document.getElementById("result").innerText="答對了！";
+  currentLevel++;
+  if(currentLevel < levels.length){
+    setTimeout(loadLevel,1000);
+  } else {
+    document.getElementById("result").innerText="全部完成！";
+  }
+ } else {
+  document.getElementById("result").innerText="再試一次！";
+ }
+}
+
+loadLevel();
+</script>
+
+</body>
+</html>
