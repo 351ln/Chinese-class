@@ -11,7 +11,7 @@ body { font-family: sans-serif; text-align: center; background:#f5f5f5; }
 .card { border:2px dashed #aaa; cursor:grab; }
 .slot { border:2px solid #333; }
 .card img, .slot img { width:100%; height:100%; object-fit:cover; }
-button { margin-top:20px; padding:10px 20px; }
+button { margin:10px; padding:10px 20px; }
 </style>
 </head>
 <body>
@@ -25,9 +25,11 @@ button { margin-top:20px; padding:10px 20px; }
 <button onclick="checkAnswer()">確認答案</button>
 <p id="result"></p>
 
+<!-- 👇 新增：控制按鈕區 -->
+<div id="controls"></div>
+
 <script>
 
-// ⚠️ 這裡放你的圖片（用本地路徑或網址）
 const levels = [
 {
  name:"愛迪生",
@@ -38,6 +40,7 @@ const levels = [
   "./images/e4.png",
   "./images/e5.png",
   "./images/e6.png"
+ ]
 },
 {
  name:"牛頓",
@@ -58,7 +61,8 @@ let currentLevel = 0;
 function loadLevel(){
  const level = levels[currentLevel];
  document.getElementById("title").innerText = `關卡${currentLevel+1}：${level.name}`;
- 
+ document.getElementById("result").innerText = "";
+
  const cardsDiv = document.getElementById("cards");
  const slotsDiv = document.getElementById("slots");
  cardsDiv.innerHTML = "";
@@ -92,6 +96,8 @@ function loadLevel(){
 
   slotsDiv.appendChild(slot);
  });
+
+ renderControls(); // 👈 關鍵：更新按鈕
 }
 
 function checkAnswer(){
@@ -105,15 +111,50 @@ function checkAnswer(){
  
  if(correct){
   document.getElementById("result").innerText="答對了！";
-  currentLevel++;
-  if(currentLevel < levels.length){
-    setTimeout(loadLevel,1000);
-  } else {
-    document.getElementById("result").innerText="全部完成！";
-  }
  } else {
   document.getElementById("result").innerText="再試一次！";
  }
+}
+
+// 👇 新增：控制邏輯
+function renderControls(){
+ const controls = document.getElementById("controls");
+ controls.innerHTML = "";
+
+ // 愛迪生：只能下一關
+ if(currentLevel === 0){
+   controls.innerHTML += `<button onclick="nextLevel()">下一關</button>`;
+ }
+
+ // 牛頓：上一關＋下一關
+ else if(currentLevel === 1){
+   controls.innerHTML += `<button onclick="prevLevel()">上一關</button>`;
+   controls.innerHTML += `<button onclick="nextLevel()">下一關</button>`;
+ }
+
+ // 萊特兄弟：上一關＋重設
+ else if(currentLevel === 2){
+   controls.innerHTML += `<button onclick="prevLevel()">上一關</button>`;
+   controls.innerHTML += `<button onclick="resetLevel()">重設</button>`;
+ }
+}
+
+function nextLevel(){
+ if(currentLevel < levels.length - 1){
+   currentLevel++;
+   loadLevel();
+ }
+}
+
+function prevLevel(){
+ if(currentLevel > 0){
+   currentLevel--;
+   loadLevel();
+ }
+}
+
+function resetLevel(){
+ loadLevel();
 }
 
 loadLevel();
