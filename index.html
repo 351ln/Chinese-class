@@ -11,69 +11,63 @@ body { font-family: sans-serif; text-align: center; background:#f5f5f5; }
 .card { border:2px dashed #aaa; cursor:grab; }
 .slot { border:2px solid #333; }
 .card img, .slot img { width:100%; height:100%; object-fit:cover; }
-button { margin-top:20px; padding:10px 20px; }
+button { margin:10px; padding:10px 20px; }
 </style>
 </head>
 <body>
 
 <div style="display:flex; justify-content:space-between; align-items:center; padding:0 20px;">
-<h1 id="title">關卡一：愛迪生</h1>
+<h1 id="title"></h1>
 <div id="stars">
-  ⭐<span id="star1">☆</span>
-  ⭐<span id="star2">☆</span>
-  ⭐<span id="star3">☆</span>
+ ⭐<span id="star1">☆</span>
+ ⭐<span id="star2">☆</span>
+ ⭐<span id="star3">☆</span>
 </div>
 </div>
-<p>👉 排序後，請用「先、再、最後」說一次故事</p>
+
+<p id="instruction"></p>
 
 <div class="container" id="cards"></div>
 <div class="container" id="slots"></div>
 
 <button onclick="checkAnswer()">確認答案</button>
-<br><br>
-<button onclick="prevLevel()">上一關</button>
-<button onclick="nextLevel()">下一關</button>
-<button onclick="resetLevel()">重設</button>
 <p id="result"></p>
+<div id="controls"></div>
 
 <script>
 
-// ⭐ 星星控制
-function lightStar(num){
-  document.getElementById("star"+num).innerText = "★";
-}
-
-function resetStars(){
-  for(let i=1;i<=3;i++){
-    document.getElementById("star"+i).innerText = "☆";
-  }
-}
-
-
-// ⚠️ 這裡放你的圖片（用本地路徑或網址）
 const levels = [
+// 1 愛迪生排序
 {
- name:"愛迪生",
- images:[
-  ""./images/e1.png",
-  "./images/e2.png",
-  "./images/e3.png",
-  "./images/e4.png",
-  "./images/e5.png",
-  "./images/e6.png"
+ name:"愛迪生（排序）",
+ mode:"full",
+ images:["./images/e1.png","./images/e2.png","./images/e3.png","./images/e4.png","./images/e5.png","./images/e6.png"]
 },
+// 2 愛迪生選三
 {
- name:"牛頓",
- images:[
-  "./images/n1.png","./images/n2.png","./images/n3.png",
-  "./images/n4.png","./images/n5.png","./images/n6.png"
- ]
+ name:"愛迪生（選三張）",
+ mode:"partial",
+ pick:3,
+ images:["./images/e1.png","./images/e2.png","./images/e3.png","./images/e4.png","./images/e5.png","./images/e6.png"]
 },
+// 3 牛頓
 {
- name:"萊特兄弟",
- images:[
-  "./images/w1.png","./images/w2.png","./images/w3.png","./images/w4.png"
- ]
+ name:"牛頓（排序）",
+ mode:"full",
+ images:["./images/e7.png","./images/e8.png","./images/e9.png"]
+},
+// 4 萊特排序
+{
+ name:"萊特兄弟（排序）",
+ mode:"full",
+ images:["./images/w1.png","./images/w2.png","./images/w3.png","./images/w4.png"]
+},
+// 5 萊特選三
+{
+ name:"萊特兄弟（選三張）",
+ mode:"partial",
+ pick:3,
+ images:["./images/w1.png","./images/w2.png","./images/w3.png","./images/w4.png"]
 }
 ];
 
@@ -83,7 +77,15 @@ function loadLevel(){
  resetStars();
  const level = levels[currentLevel];
  document.getElementById("title").innerText = `關卡${currentLevel+1}：${level.name}`;
- 
+ document.getElementById("result").innerText = "";
+
+ // 指示文字
+ if(level.mode === "partial"){
+  document.getElementById("instruction").innerText = "👉 選三張並排序，用『先、再、最後』說故事";
+ } else {
+  document.getElementById("instruction").innerText = "👉 排序圖片";
+ }
+
  const cardsDiv = document.getElementById("cards");
  const slotsDiv = document.getElementById("slots");
  cardsDiv.innerHTML = "";
@@ -104,7 +106,9 @@ function loadLevel(){
   cardsDiv.appendChild(card);
  });
  
- level.images.forEach(()=>{
+ let slotCount = level.mode === "partial" ? level.pick : level.images.length;
+
+ for(let i=0;i<slotCount;i++){
   let slot = document.createElement("div");
   slot.className="slot";
 
@@ -116,7 +120,9 @@ function loadLevel(){
   }
 
   slotsDiv.appendChild(slot);
- });
+ }
+
+ renderControls();
 }
 
 function checkAnswer(){
@@ -124,44 +130,56 @@ function checkAnswer(){
  const slots = document.querySelectorAll(".slot");
  let correct = true;
  
- slots.forEach((slot,i)=>{
-  if(slot.getAttribute("data-src") !== level.images[i]) correct=false;
- });
- 
- if(correct){
-  document.getElementById("result").innerText="答對了！";
-  currentLevel++;
-  if(currentLevel < levels.length){
-    setTimeout(loadLevel,1000);
-  } else {
-    document.getElementById("result").innerText="全部完成！";
-  }
- } else {
-  document.getElementById("result").innerText="再試一次！";
+ if(level.mode === "full"){
+   slots.forEach((slot,i)=>{
+     if(slot.getAttribute("data-src") !== level.images[i]) correct=false;
+   });
+ }
+
+ else {
+   let chosen = [];
+   slots.forEach(slot=>{
+     let val = slot.getAttribute("data-src");
+     if(!val) correct=false;
+     chosen.push(level.images.indexOf(val));
+   });
+
+   for(let i=1;i<chosen.length;i++){
+     if(chosen[i] <= chosen[i-1]) correct=false;
+   }
+ }
+
+ document.getElementById("result").innerText = correct ? "答對了！" : "再試一次！";
+}
+
+function renderControls(){
+ const controls = document.getElementById("controls");
+ controls.innerHTML = "";
+
+ controls.innerHTML += `<button onclick="resetLevel()">重設</button>`;
+
+ if(currentLevel > 0){
+  controls.innerHTML += `<button onclick="prevLevel()">上一關</button>`;
+ }
+
+ if(currentLevel < levels.length -1){
+  controls.innerHTML += `<button onclick="nextLevel()">下一關</button>`;
+ }
+
+ if(currentLevel === levels.length -1){
+  controls.innerHTML += `<button onclick="goStart()">回到第一關</button>`;
  }
 }
 
+function nextLevel(){ currentLevel++; loadLevel(); }
+function prevLevel(){ currentLevel--; loadLevel(); }
+function resetLevel(){ loadLevel(); }
+function goStart(){ currentLevel=0; loadLevel(); }
+
+function lightStar(num){ document.getElementById("star"+num).innerText="★"; }
+function resetStars(){ for(let i=1;i<=3;i++){document.getElementById("star"+i).innerText="☆";} }
+
 loadLevel();
-
-function nextLevel(){
-  currentLevel++;
-  if(currentLevel >= levels.length){
-    currentLevel = levels.length - 1;
-  }
-  loadLevel();
-}
-
-function prevLevel(){
-  currentLevel--;
-  if(currentLevel < 0){
-    currentLevel = 0;
-  }
-  loadLevel();
-}
-
-function resetLevel(){
-  loadLevel();
-}
 </script>
 
 </body>
